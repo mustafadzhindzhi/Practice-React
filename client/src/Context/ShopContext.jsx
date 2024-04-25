@@ -1,25 +1,41 @@
-import React, { createContext, useState } from "react";
-import all_product from "../Components/Assets/all_product";
+import React, { createContext, useEffect, useState } from "react";
 
 export const ShopContext = createContext(null);
 const getDefaultCart = () => {
   let cart = {};
-  for (let index = 0; index < all_product.length + 1; index++) {
+  for (let index = 0; index < 300 + 1; index++) {
     cart[index] = 0;
   }
   return cart;
 };
 
 const ShopContextProvider = (props) => {
+  const [all_product, setAll_Product] = useState([]);
   const [cartItems, setCartItems] = useState(getDefaultCart());
 
-  const addToCart = (itemId) => {
-    setCartItems((prev) => {
-      const updatedCart = { ...prev, [itemId]: prev[itemId] + 1 };
-      return updatedCart;
-    });
-  };
+  useEffect(() => {
+    fetch('http://localhost:3000/allproducts')
+    .then((res) => res.json())
+    .then((data) => setAll_Product(data));
+  },[])
 
+  const addToCart = (itemId) => {
+    setCartItems((prev) => ({...prev, [itemId]: prev[itemId] + 1 || 1}));
+    if (localStorage.getItem('auth-token')) {
+        fetch('http://localhost:3000/addtocart', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'auth-token': `${localStorage.getItem('auth-token')}`,
+                'Content-Type': 'application/json'  
+            },
+            body: JSON.stringify({"itemId": itemId})
+        })
+        .then((res) => res.json())
+        .then((data) => console.log(data))
+        .catch((error) => console.error('Error adding to cart:', error));
+    };
+};
   const removeFromCart = (itemId) => {
     setCartItems((prev) => ({ ...prev, [itemId]: prev[itemId] - 1 }));
   };
